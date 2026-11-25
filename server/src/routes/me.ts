@@ -22,7 +22,8 @@ meRoutes.post('/saved', async (c) => {
 
 meRoutes.put('/saved/:id', (c) => {
   const id = c.req.param('id')
-  if (repo.getLineup(id)?.status !== 'published') throw new HTTPException(404, { message: 'Lineup not found' })
+  const lineup = repo.getLineup(id)
+  if (lineup?.status !== 'published' || !repo.mapExists(lineup.map)) throw new HTTPException(404, { message: 'Lineup not found' })
   repo.saveLineups(c.get('user')!.id, [id])
   return c.body(null, 204)
 })

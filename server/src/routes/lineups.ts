@@ -14,7 +14,7 @@ export const lineupRoutes = new Hono<AppEnv>()
 // Public: published lineups only.
 lineupRoutes.get('/', (c) => {
   const query = readQuery(c, lineupQuerySchema)
-  const { lineups, total } = repo.listLineups({ ...query, status: 'published' })
+  const { lineups, total } = repo.listLineups({ ...query, status: 'published', activeMapsOnly: true })
   return c.json({ lineups: lineups.map(repo.publicLineup), total })
 })
 
@@ -22,7 +22,8 @@ lineupRoutes.get('/:id', (c) => {
   const lineup = repo.getLineup(c.req.param('id'))
   const user = c.get('user')
   const visible =
-    lineup && (lineup.status === 'published' || user?.role === 'admin' || (user && lineup.authorId === user.id))
+    lineup &&
+    ((lineup.status === 'published' && repo.mapExists(lineup.map)) || user?.role === 'admin' || (user && lineup.authorId === user.id))
   if (!visible) throw new HTTPException(404, { message: 'Lineup not found' })
   const { authorId: _authorId, ...rest } = lineup
   return c.json({ lineup: rest })

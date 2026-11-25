@@ -88,6 +88,8 @@ export interface LineupFilters {
   q?: string
   status?: LineupStatus
   authorId?: number
+  /** Hide lineups on maps that have left the pool. */
+  activeMapsOnly?: boolean
   limit: number
   offset: number
 }
@@ -101,6 +103,7 @@ export function listLineups(f: LineupFilters): { lineups: LineupWithMeta[]; tota
   }
 
   if (f.status) add('l.status = ?', f.status)
+  if (f.activeMapsOnly) add('l.map_id IN (SELECT id FROM maps WHERE active = 1)')
   if (f.authorId !== undefined) add('l.author_id = ?', f.authorId)
   if (f.map) add('l.map_id = ?', f.map)
   if (f.type) add('l.type = ?', f.type)
@@ -208,7 +211,8 @@ export function listSaved(userId: number): string[] {
   const rows = db
     .prepare(
       `SELECT s.lineup_id AS id FROM saved s JOIN lineups l ON l.id = s.lineup_id
-       WHERE s.user_id = ? AND l.status = 'published' ORDER BY s.created_at`,
+       WHERE s.user_id = ? AND l.status = 'published' AND l.map_id IN (SELECT id FROM maps WHERE active = 1)
+       ORDER BY s.created_at`,
     )
     .all(userId) as { id: string }[]
   return rows.map((r) => r.id)
@@ -218,7 +222,7 @@ export function listSaved(userId: number): string[] {
 export function saveLineups(userId: number, ids: string[]): number {
   const stmt = db.prepare(
     `INSERT OR IGNORE INTO saved (user_id, lineup_id)
-     SELECT ?, id FROM lineups WHERE id = ? AND status = 'published'`,
+     SELECT ?, l.id FROM lineups l WHERE l.id = ? AND l.status = 'published' AND l.map_id IN (SELECT id FROM maps WHERE active = 1)`,
   )
   return transaction(() => ids.reduce((n, id) => n + Number(stmt.run(userId, id).changes), 0))
 }

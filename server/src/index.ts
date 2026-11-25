@@ -3,10 +3,11 @@ import { app } from './app.ts'
 import { purgeExpiredSessions } from './auth.ts'
 import { config } from './config.ts'
 import { db, migrate } from './db.ts'
-import { ensureAdmin, seedIfEmpty } from './seed.ts'
+import { ensureAdmin, seedIfEmpty, syncMapPool } from './seed.ts'
 
 migrate()
 seedIfEmpty()
+syncMapPool()
 await ensureAdmin()
 purgeExpiredSessions()
 setInterval(purgeExpiredSessions, 60 * 60 * 1000).unref()

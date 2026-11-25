@@ -10,7 +10,8 @@ process.env.ADMIN_PASSWORD = 'admin-password'
 // Imported after env is set so config picks it up.
 const { app } = await import('../src/app.ts')
 const { migrate } = await import('../src/db.ts')
-const { seedIfEmpty, ensureAdmin } = await import('../src/seed.ts')
+const { seedIfEmpty, ensureAdmin, syncMapPool } = await import('../src/seed.ts')
+const { db } = await import('../src/db.ts')
 
 const ORIGIN = 'http://localhost:5173'
 
@@ -47,6 +48,7 @@ const newLineup = {
 before(async () => {
   migrate()
   seedIfEmpty()
+  syncMapPool()
   await ensureAdmin()
 })
 
@@ -149,6 +151,34 @@ describe('accounts, deck and submissions', () => {
   it('logs out', async () => {
     assert.equal((await user('POST', '/api/auth/logout')).status, 204)
     assert.equal((await user('GET', '/api/me/saved')).status, 401)
+  })
+})
+
+describe('map pool', () => {
+  const api = client()
+
+  it('has Cache and not Train', async () => {
+    const ids = (await api('GET', '/api/maps')).json.maps.map((m: { id: string }) => m.id)
+    assert.ok(ids.includes('cache'))
+    assert.ok(!ids.includes('train'))
+  })
+
+  it('hides maps (and their lineups) that leave the pool', async () => {
+    db.prepare("INSERT INTO maps (id, name, code, accent, bg) VALUES ('oldmap', 'Old', 'de_old', '#fff', '#000')").run()
+    db.prepare(
+      `INSERT INTO lineups (id, map_id, title, type, side, throw_type, click, from_spot, to_spot, difficulty, steps,
+         origin_x, origin_y, landing_x, landing_y) VALUES ('oldmap-smoke', 'oldmap', 'Old smoke', 'smoke', 'T',
+         'Standing', 'Left', 'A', 'B', 1, '["x"]', 1, 1, 2, 2)`,
+    ).run()
+    assert.equal((await api('GET', '/api/lineups/oldmap-smoke')).status, 200)
+
+    syncMapPool()
+
+    const ids = (await api('GET', '/api/maps')).json.maps.map((m: { id: string }) => m.id)
+    assert.ok(!ids.includes('oldmap'))
+    assert.equal((await api('GET', '/api/lineups/oldmap-smoke')).status, 404)
+    const all = (await api('GET', '/api/lineups')).json.lineups.map((l: { id: string }) => l.id)
+    assert.ok(!all.includes('oldmap-smoke'))
   })
 })
 
