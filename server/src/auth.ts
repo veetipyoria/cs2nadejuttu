@@ -4,7 +4,7 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { createMiddleware } from 'hono/factory'
 import { HTTPException } from 'hono/http-exception'
 import { config } from './config.ts'
-import { db } from './db.ts'
+import { db, one } from './db.ts'
 import type { AppEnv, SessionUser } from './types.ts'
 
 export const SESSION_COOKIE = 'nd_session'
@@ -36,14 +36,13 @@ export const verifyAgainstDummy = (password: string) => verifyPassword(password,
 
 const sha256 = (value: string) => createHash('sha256').update(value).digest('hex')
 
-export function createSession(c: Context, userId: number): void {
+export async function createSession(c: Context, userId: number): Promise<void> {
   const token = randomBytes(32).toString('base64url')
   const maxAge = config.sessionDays * 24 * 60 * 60
-  db.prepare('INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)').run(
-    sha256(token),
-    userId,
-    Date.now() + maxAge * 1000,
-  )
+  await db.execute({
+    sql: 'INSERT INTO sessions (token_hash, user_id, expires_at) VALUES (?, ?, ?)',
+    args: [sha256(token), userId, Date.now() + maxAge * 1000],
+  })
   setCookie(c, SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'Lax',
@@ -53,14 +52,14 @@ export function createSession(c: Context, userId: number): void {
   })
 }
 
-export function destroySession(c: Context): void {
+export async function destroySession(c: Context): Promise<void> {
   const token = getCookie(c, SESSION_COOKIE)
-  if (token) db.prepare('DELETE FROM sessions WHERE token_hash = ?').run(sha256(token))
+  if (token) await db.execute({ sql: 'DELETE FROM sessions WHERE token_hash = ?', args: [sha256(token)] })
   deleteCookie(c, SESSION_COOKIE, { path: '/' })
 }
 
-export function purgeExpiredSessions(): void {
-  db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(Date.now())
+export async function purgeExpiredSessions(): Promise<void> {
+  await db.execute({ sql: 'DELETE FROM sessions WHERE expires_at < ?', args: [Date.now()] })
 }
 
 /** Attaches the signed-in user (or null) to every request. */
@@ -68,14 +67,13 @@ export const session = createMiddleware<AppEnv>(async (c, next) => {
   const token = getCookie(c, SESSION_COOKIE)
   let user: SessionUser | null = null
   if (token) {
-    user =
-      (db
-        .prepare(
-          `SELECT u.id, u.username, u.role FROM sessions s
-           JOIN users u ON u.id = s.user_id
-           WHERE s.token_hash = ? AND s.expires_at > ?`,
-        )
-        .get(sha256(token), Date.now()) as SessionUser | undefined) ?? null
+    const row = await one(
+      `SELECT u.id, u.username, u.role FROM sessions s
+       JOIN users u ON u.id = s.user_id
+       WHERE s.token_hash = ? AND s.expires_at > ?`,
+      [sha256(token), Date.now()],
+    )
+    if (row) user = { id: Number(row.id), username: String(row.username), role: row.role === 'admin' ? 'admin' : 'user' }
   }
   c.set('user', user)
   await next()

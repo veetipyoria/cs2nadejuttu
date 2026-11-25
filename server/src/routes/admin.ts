@@ -13,12 +13,12 @@ adminRoutes.use('*', requireAdmin)
 const adminQuery = lineupQuerySchema.extend({ status: z.enum(STATUSES).optional() })
 
 /** All lineups, any status. `?status=pending` gives the review queue. */
-adminRoutes.get('/lineups', (c) => c.json(repo.listLineups(readQuery(c, adminQuery))))
+adminRoutes.get('/lineups', async (c) => c.json(await repo.listLineups(readQuery(c, adminQuery))))
 
 /** Approve / reject / unpublish. */
 adminRoutes.post('/lineups/:id/status', async (c) => {
   const { status } = await readJson(c, statusSchema)
-  const lineup = repo.updateLineup(c.req.param('id'), {}, status)
+  const lineup = await repo.updateLineup(c.req.param('id'), {}, status)
   if (!lineup) throw new HTTPException(404, { message: 'Lineup not found' })
   return c.json({ lineup })
 })

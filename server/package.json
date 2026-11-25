@@ -3,14 +3,15 @@
   "version": "1.0.0",
   "description": "NadeDeck API",
   "scripts": {
-    "dev": "node --watch --env-file-if-exists=.env src/index.ts",
-    "start": "node --env-file-if-exists=.env src/index.ts",
+    "dev": "node --watch --env-file-if-exists=.env src/main.ts",
+    "start": "node --env-file-if-exists=.env src/main.ts",
     "typecheck": "tsc",
     "test": "node --test \"test/**/*.test.ts\""
   },
   "type": "module",
   "dependencies": {
     "@hono/node-server": "^2.1.11",
+    "@libsql/client": "^0.18.0",
     "hono": "^4.13.22",
     "zod": "^4.6.7"
   },

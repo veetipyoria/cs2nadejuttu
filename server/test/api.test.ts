@@ -1,17 +1,22 @@
-import { before, describe, it } from 'node:test'
+import { after, before, describe, it } from 'node:test'
 import assert from 'node:assert/strict'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
+// Fresh throwaway database file per run (in-memory databases don't survive libsql transactions).
+const tmp = mkdtempSync(join(tmpdir(), 'nadedeck-test-'))
 process.env.NODE_ENV = 'test'
-process.env.DATABASE_PATH = ':memory:'
+process.env.TURSO_DATABASE_URL = ''
+process.env.DATABASE_PATH = join(tmp, 'test.db')
 process.env.STATIC_DIR = ''
 process.env.ADMIN_USERNAME = 'admin'
 process.env.ADMIN_PASSWORD = 'admin-password'
 
 // Imported after env is set so config picks it up.
-const { app } = await import('../src/app.ts')
-const { migrate } = await import('../src/db.ts')
-const { seedIfEmpty, ensureAdmin, syncMapPool } = await import('../src/seed.ts')
-const { db } = await import('../src/db.ts')
+const { app } = await import('../src/api.ts')
+const { db, migrate, one } = await import('../src/db.ts')
+const { ensureAdmin, syncMapPool } = await import('../src/seed.ts')
 
 const ORIGIN = 'http://localhost:5173'
 
@@ -46,9 +51,8 @@ const newLineup = {
 }
 
 before(async () => {
-  migrate()
-  seedIfEmpty()
-  syncMapPool()
+  await migrate()
+  await syncMapPool()
   await ensureAdmin()
 })
 
@@ -164,21 +168,34 @@ describe('map pool', () => {
   })
 
   it('hides maps (and their lineups) that leave the pool', async () => {
-    db.prepare("INSERT INTO maps (id, name, code, accent, bg) VALUES ('oldmap', 'Old', 'de_old', '#fff', '#000')").run()
-    db.prepare(
+    await db.execute("INSERT INTO maps (id, name, code, accent, bg) VALUES ('oldmap', 'Old', 'de_old', '#fff', '#000')")
+    await db.execute(
       `INSERT INTO lineups (id, map_id, title, type, side, throw_type, click, from_spot, to_spot, difficulty, steps,
          origin_x, origin_y, landing_x, landing_y) VALUES ('oldmap-smoke', 'oldmap', 'Old smoke', 'smoke', 'T',
          'Standing', 'Left', 'A', 'B', 1, '["x"]', 1, 1, 2, 2)`,
-    ).run()
+    )
     assert.equal((await api('GET', '/api/lineups/oldmap-smoke')).status, 200)
 
-    syncMapPool()
+    await syncMapPool()
 
     const ids = (await api('GET', '/api/maps')).json.maps.map((m: { id: string }) => m.id)
     assert.ok(!ids.includes('oldmap'))
     assert.equal((await api('GET', '/api/lineups/oldmap-smoke')).status, 404)
     const all = (await api('GET', '/api/lineups')).json.lineups.map((l: { id: string }) => l.id)
     assert.ok(!all.includes('oldmap-smoke'))
+  })
+})
+
+describe('migrations', () => {
+  it('records applied migrations in schema_migrations', async () => {
+    const row = await one('SELECT MAX(version) AS v FROM schema_migrations')
+    assert.equal(Number(row?.v), 1)
+  })
+
+  it('is a no-op when run again', async () => {
+    await migrate()
+    const row = await one('SELECT COUNT(*) AS n FROM schema_migrations')
+    assert.equal(Number(row?.n), 1)
   })
 })
 
@@ -191,4 +208,13 @@ describe('security', () => {
     })
     assert.equal(res.status, 403)
   })
+})
+
+after(() => {
+  db.close()
+  try {
+    rmSync(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
+  } catch {
+    // Windows can keep the file locked briefly after close; the OS temp folder gets cleaned anyway.
+  }
 })

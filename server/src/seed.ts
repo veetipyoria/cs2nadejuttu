@@ -1,54 +1,37 @@
 import { hashPassword } from './auth.ts'
 import { config } from './config.ts'
-import { db, transaction } from './db.ts'
-import { createLineup, insertMap } from './repo.ts'
+import { atomic, db, one } from './db.ts'
+import type { InStatement } from './db.ts'
+import { deactivateOtherMapsStmt, insertLineupStmt, insertMapStmt, mapIds, updateMapStmt } from './repo.ts'
 import { SEED_LINEUPS, SEED_MAPS } from './seed-data.ts'
 
-/** Inserts the starter maps and lineups the first time the server runs. */
-export function seedIfEmpty(): void {
-  const { n } = db.prepare('SELECT COUNT(*) AS n FROM maps').get() as { n: number }
-  if (n > 0) return
+/**
+ * Keeps the map pool in line with SEED_MAPS on every start. On an empty database this is the
+ * initial seed. Afterwards it adds new maps (with their starter lineups), updates names/colours/
+ * order, and hides maps that left the pool. Hidden maps keep their data, so adding one back to
+ * SEED_MAPS restores it. Everything happens in one atomic batch.
+ */
+export async function syncMapPool(): Promise<void> {
+  const existing = await mapIds()
+  const added: string[] = []
+  const stmts: InStatement[] = []
 
-  transaction(() => {
-    SEED_MAPS.forEach((m, i) => insertMap(m, i))
-    for (const { id, ...input } of SEED_LINEUPS) {
-      createLineup({ ...input, mediaUrl: input.mediaUrl ?? null }, { id, status: 'published', authorId: null })
+  SEED_MAPS.forEach((m, i) => {
+    if (existing.has(m.id)) {
+      stmts.push(updateMapStmt(m, i))
+      return
+    }
+    added.push(m.id)
+    stmts.push(insertMapStmt(m, i))
+    for (const { id, ...input } of SEED_LINEUPS.filter((l) => l.map === m.id)) {
+      stmts.push(
+        insertLineupStmt(id, { ...input, mediaUrl: input.mediaUrl ?? null }, { status: 'published', authorId: null }),
+      )
     }
   })
-  console.log(`[seed] inserted ${SEED_MAPS.length} maps and ${SEED_LINEUPS.length} lineups`)
-}
+  stmts.push(deactivateOtherMapsStmt(SEED_MAPS.map((m) => m.id)))
 
-/**
- * Keeps the map pool in line with SEED_MAPS on every start: adds new maps (with their starter
- * lineups), updates names/colours/order, and hides maps that left the pool. Hidden maps keep
- * their data, so adding one back to SEED_MAPS restores it.
- */
-export function syncMapPool(): void {
-  const existing = new Set(
-    (db.prepare('SELECT id FROM maps').all() as { id: string }[]).map((r) => r.id),
-  )
-  const added: string[] = []
-
-  transaction(() => {
-    SEED_MAPS.forEach((m, i) => {
-      if (existing.has(m.id)) {
-        db.prepare('UPDATE maps SET name = ?, code = ?, accent = ?, bg = ?, sort = ?, active = 1 WHERE id = ?').run(
-          m.name, m.code, m.accent, m.bg, i, m.id,
-        )
-      } else {
-        insertMap(m, i)
-        added.push(m.id)
-        for (const { id, ...input } of SEED_LINEUPS.filter((l) => l.map === m.id)) {
-          createLineup({ ...input, mediaUrl: input.mediaUrl ?? null }, { id, status: 'published', authorId: null })
-        }
-      }
-    })
-    const poolIds = SEED_MAPS.map((m) => m.id)
-    db.prepare(
-      `UPDATE maps SET active = 0 WHERE active = 1 AND id NOT IN (${poolIds.map(() => '?').join(', ')})`,
-    ).run(...poolIds)
-  })
-
+  await atomic(stmts)
   if (added.length) console.log(`[seed] added map(s): ${added.join(', ')}`)
 }
 
@@ -57,18 +40,16 @@ export async function ensureAdmin(): Promise<void> {
   const { adminUsername: username, adminPassword: password } = config
   if (!username || !password) return
 
-  const existing = db.prepare('SELECT id, role FROM users WHERE username = ?').get(username) as
-    | { id: number; role: string }
-    | undefined
+  const existing = await one('SELECT id, role FROM users WHERE username = ?', [username])
 
   if (!existing) {
-    db.prepare(`INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')`).run(
-      username,
-      await hashPassword(password),
-    )
+    await db.execute({
+      sql: `INSERT INTO users (username, password_hash, role) VALUES (?, ?, 'admin')`,
+      args: [username, await hashPassword(password)],
+    })
     console.log(`[seed] created admin "${username}"`)
   } else if (existing.role !== 'admin') {
-    db.prepare(`UPDATE users SET role = 'admin' WHERE id = ?`).run(existing.id)
+    await db.execute({ sql: `UPDATE users SET role = 'admin' WHERE id = ?`, args: [Number(existing.id)] })
     console.log(`[seed] promoted "${username}" to admin`)
   }
 }

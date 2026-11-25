@@ -1,6 +1,17 @@
 # NadeDeck API
 
-Node 24 + [Hono](https://hono.dev) + built-in SQLite (`node:sqlite`). No build step: Node runs the TypeScript directly.
+Node 24 + [Hono](https://hono.dev) + SQLite via [libSQL](https://github.com/tursodatabase/libsql-client-ts):
+a hosted [Turso](https://turso.tech) database in production, or a local file in development.
+No build step: Node runs the TypeScript directly.
+
+## Database
+
+- **Schema:** [`schema.sql`](schema.sql) is the single source of truth. To change the database, add a new
+  `-- @migration N: ...` block at the bottom (never edit committed ones). The server applies new blocks on
+  startup and records them in the `schema_migrations` table.
+- **Turso:** set `TURSO_DATABASE_URL` (`libsql://...`) and `TURSO_AUTH_TOKEN` in `.env`.
+- **Local:** leave `TURSO_DATABASE_URL` empty and the server uses `data/nadedeck.db`. Tests always use a
+  throwaway local file.
 
 ## Run
 
@@ -15,8 +26,26 @@ Then start the frontend (`npm run dev` in the parent folder); Vite proxies `/api
 On first start the database (`data/nadedeck.db`) is created and seeded with the starter maps and lineups.
 Set `ADMIN_USERNAME` / `ADMIN_PASSWORD` to create an admin account.
 
-**Production:** `npm run build` in the parent folder, set `NODE_ENV=production` in `.env`, then `npm start`.
-The server serves the built site and the API from one origin.
+## Deploy to Vercel
+
+The repo deploys as one Vercel project with two [services](https://vercel.com/docs/services)
+(see `../vercel.json`): the Vite site, and this API under `/api/*`. On Vercel, `src/app.ts`
+is the entry point; `src/main.ts` is only for running the server yourself. Keep the Vercel entry
+the only file named `app`, `index` or `server`: Vercel detects Hono apps by those names.
+
+1. Import the repo at [vercel.com/new](https://vercel.com/new). Leave the root directory as the repo root.
+2. Add environment variables in the project settings:
+   `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`.
+   Vercel Functions have no persistent disk, so Turso is required there.
+3. Deploy. The first request on each new instance runs pending `schema.sql` migrations.
+
+Preview deployments get the same variables by default, so they'd use the production database.
+Scope the Turso variables to Production, or give Preview its own Turso database.
+
+Check the setup locally first with `npx vercel dev --local` (no account needed).
+
+**Self-hosting instead:** `npm run build` in the parent folder, set `NODE_ENV=production` in `.env`,
+then `npm start`. The server serves the built site and the API from one origin.
 
 ## Endpoints
 
@@ -45,15 +74,17 @@ Errors are `{ error }`, plus `issues: [{ path, message }]` for validation failur
 ## Layout
 
 ```
+schema.sql       database schema (single source of truth)
 src/
-  index.ts       startup: migrate, seed, listen
-  app.ts         middleware, route mounting, error handling, static site
+  main.ts        run the server yourself: setup, then listen
+  app.ts         Vercel entry: default export, setup on first request
+  api.ts         middleware, route mounting, error handling, static site
   config.ts      env vars
-  db.ts          SQLite connection + migrations (append-only list)
+  db.ts          database client (Turso or local file) + runs schema.sql migrations
   repo.ts        all SQL for maps, lineups, saved decks
   auth.ts        scrypt password hashing, sessions, auth middleware
   validation.ts  zod schemas
   routes/        auth, lineups + maps, me, admin
   seed-data.ts   starter content
-test/            node:test suite (in-memory DB): npm test
+test/            node:test suite (throwaway local DB): npm test
 ```
