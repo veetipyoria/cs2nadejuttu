@@ -10,12 +10,12 @@ cp .env.example .env     # optional: sets the admin account, port, etc.
 npm run dev              # http://localhost:3001, restarts on change
 ```
 
-Then start the frontend (`cd ../my-react-app && npm run dev`); Vite proxies `/api` to this server.
+Then start the frontend (`npm run dev` in the parent folder); Vite proxies `/api` to this server.
 
 On first start the database (`data/nadedeck.db`) is created and seeded with the starter maps and lineups.
 Set `ADMIN_USERNAME` / `ADMIN_PASSWORD` to create an admin account.
 
-**Production:** `npm run build` in `my-react-app`, set `NODE_ENV=production` in `.env`, then `npm start`.
+**Production:** `npm run build` in the parent folder, set `NODE_ENV=production` in `.env`, then `npm start`.
 The server serves the built site and the API from one origin.
 
 ## Endpoints

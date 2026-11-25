@@ -5,7 +5,7 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react()],
   server: {
-    // Forward API calls to the NadeDeck server (cd ../server && npm run dev)
+    // Forward API calls to the NadeDeck server (cd server && npm run dev)
     proxy: {
       '/api': 'http://localhost:3001',
     },
