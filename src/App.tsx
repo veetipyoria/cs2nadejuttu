@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api } from './api'
+import { mapTileBackground } from './mapImages'
 import type { CsMap, Lineup, Side, ThrowType, User, UtilityType } from './types'
 import { THROWS, UTILITY_META } from './types'
 import { AuthModal } from './components/AuthModal'
@@ -259,7 +260,7 @@ function App() {
                   <button
                     key={m.id}
                     className={`map-tile${mapId === m.id ? ' active' : ''}`}
-                    style={{ background: m.bg, ['--map-accent' as string]: m.accent }}
+                    style={{ background: mapTileBackground(m.id, m.bg), ['--map-accent' as string]: m.accent }}
                     onClick={() => {
                       setMapId(m.id)
                       document.getElementById('browse')?.scrollIntoView({ behavior: 'smooth' })

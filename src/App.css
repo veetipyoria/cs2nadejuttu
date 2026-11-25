@@ -187,7 +187,8 @@
 .map-tile:hover { transform: translateY(-2px); border-color: #3a424e; }
 .map-tile.active { border-color: var(--map-accent, var(--accent)); box-shadow: 0 0 0 1px var(--map-accent, var(--accent)) inset; }
 .map-tile.all { background: var(--panel); }
-.map-code { font-size: 0.72rem; color: rgba(255, 255, 255, 0.55); font-family: ui-monospace, Consolas, monospace; }
+.map-tile > span { position: relative; z-index: 1; text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8); }
+.map-code { font-size: 0.72rem; color: rgba(255, 255, 255, 0.7); font-family: ui-monospace, Consolas, monospace; }
 .map-name { font-family: var(--display); font-size: 1.6rem; font-weight: 700; text-transform: uppercase; margin-top: auto; }
 .map-count { font-size: 0.8rem; color: var(--map-accent, var(--muted)); }
 
