@@ -1,39 +1,6 @@
-export type UtilityType = 'smoke' | 'flash' | 'molotov' | 'he'
-export type Side = 'T' | 'CT'
-export type ThrowType = 'Standing' | 'Jump throw' | 'Running' | 'Walking' | 'Crouch'
-export type Click = 'Left' | 'Right' | 'Left + Right'
+import type { CsMap, Lineup } from './types.ts'
 
-export interface Point {
-  x: number // 0-100, percentage across the radar
-  y: number
-}
-
-export interface Lineup {
-  id: string
-  map: string
-  title: string
-  type: UtilityType
-  side: Side
-  throw: ThrowType
-  click: Click
-  from: string
-  to: string
-  difficulty: 1 | 2 | 3
-  steps: string[]
-  origin: Point
-  landing: Point
-  tickrateSafe: boolean
-}
-
-export interface CsMap {
-  id: string
-  name: string
-  code: string
-  accent: string
-  bg: string
-}
-
-export const MAPS: CsMap[] = [
+export const SEED_MAPS: CsMap[] = [
   { id: 'mirage', name: 'Mirage', code: 'de_mirage', accent: '#e8b465', bg: 'linear-gradient(135deg,#5c4524,#2a1f12)' },
   { id: 'inferno', name: 'Inferno', code: 'de_inferno', accent: '#e07a4f', bg: 'linear-gradient(135deg,#5e2d1c,#24130d)' },
   { id: 'dust2', name: 'Dust II', code: 'de_dust2', accent: '#d9c08a', bg: 'linear-gradient(135deg,#5a4b2c,#231d12)' },
@@ -43,15 +10,8 @@ export const MAPS: CsMap[] = [
   { id: 'train', name: 'Train', code: 'de_train', accent: '#b0a3d4', bg: 'linear-gradient(135deg,#3a3358,#171424)' },
 ]
 
-export const UTILITY_META: Record<UtilityType, { label: string; color: string }> = {
-  smoke: { label: 'Smoke', color: '#c3ccd6' },
-  flash: { label: 'Flash', color: '#f5d76e' },
-  molotov: { label: 'Molotov', color: '#ff7a3d' },
-  he: { label: 'HE', color: '#7fd98f' },
-}
-
-// Sample data – swap for your API / CMS later.
-export const LINEUPS: Lineup[] = [
+// Initial content inserted on first start when the database is empty.
+export const SEED_LINEUPS: Lineup[] = [
   {
     id: 'mirage-window-smoke',
     map: 'mirage',

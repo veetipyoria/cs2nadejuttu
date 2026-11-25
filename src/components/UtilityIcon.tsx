@@ -1,5 +1,5 @@
-import type { UtilityType } from '../data/lineups'
-import { UTILITY_META } from '../data/lineups'
+import type { UtilityType } from '../types'
+import { UTILITY_META } from '../types'
 
 export function UtilityIcon({ type, size = 18 }: { type: UtilityType; size?: number }) {
   const color = UTILITY_META[type].color

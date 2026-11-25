@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Lineup } from '../data/lineups'
-import { MAPS, UTILITY_META } from '../data/lineups'
+import type { CsMap, Lineup } from '../types'
+import { UTILITY_META } from '../types'
 import { UtilityIcon } from './UtilityIcon'
 import { Difficulty } from './LineupCard'
 
 interface Props {
   lineup: Lineup
+  map: CsMap | undefined
   saved: boolean
   onClose: () => void
   onToggleSave: () => void
 }
 
-export function LineupModal({ lineup, saved, onClose, onToggleSave }: Props) {
-  const map = MAPS.find((m) => m.id === lineup.map)!
+export function LineupModal({ lineup, map, saved, onClose, onToggleSave }: Props) {
   const meta = UTILITY_META[lineup.type]
   const closeRef = useRef<HTMLButtonElement>(null)
   const [step, setStep] = useState(0)
@@ -48,7 +48,13 @@ export function LineupModal({ lineup, saved, onClose, onToggleSave }: Props) {
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" style={{ ['--util' as string]: meta.color }}>
         <button ref={closeRef} className="modal-close" onClick={onClose} aria-label="Close">✕</button>
 
-        <div className="modal-media" style={{ background: map.bg }}>
+        <div className="modal-media" style={{ background: map?.bg ?? 'var(--panel-2)' }}>
+          {lineup.mediaUrl &&
+            (/\.(mp4|webm)(\?|$)/i.test(lineup.mediaUrl) ? (
+              <video className="media-fill" src={lineup.mediaUrl} autoPlay muted loop playsInline />
+            ) : (
+              <img className="media-fill" src={lineup.mediaUrl} alt={`${lineup.title} lineup position`} />
+            ))}
           <div className="viewfinder">
             <span className="vf-corner tl" /><span className="vf-corner tr" />
             <span className="vf-corner bl" /><span className="vf-corner br" />
@@ -68,7 +74,7 @@ export function LineupModal({ lineup, saved, onClose, onToggleSave }: Props) {
           <div className="modal-kicker">
             <span className="card-type"><UtilityIcon type={lineup.type} size={16} /> {meta.label}</span>
             <span className="dot" />
-            <span>{map.name}</span>
+            <span>{map?.name ?? lineup.map}</span>
             <span className={`side side-${lineup.side.toLowerCase()}`}>{lineup.side}</span>
           </div>
           <h2 id="modal-title">{lineup.title}</h2>

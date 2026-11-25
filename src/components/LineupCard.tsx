@@ -1,9 +1,10 @@
-import type { Lineup } from '../data/lineups'
-import { MAPS, UTILITY_META } from '../data/lineups'
+import type { CsMap, Lineup } from '../types'
+import { UTILITY_META } from '../types'
 import { UtilityIcon } from './UtilityIcon'
 
 interface Props {
   lineup: Lineup
+  map: CsMap | undefined
   saved: boolean
   highlighted: boolean
   onOpen: () => void
@@ -21,8 +22,7 @@ export function Difficulty({ level }: { level: 1 | 2 | 3 }) {
   )
 }
 
-export function LineupCard({ lineup, saved, highlighted, onOpen, onToggleSave, onHover }: Props) {
-  const map = MAPS.find((m) => m.id === lineup.map)!
+export function LineupCard({ lineup, map, saved, highlighted, onOpen, onToggleSave, onHover }: Props) {
   const meta = UTILITY_META[lineup.type]
 
   return (
@@ -33,9 +33,9 @@ export function LineupCard({ lineup, saved, highlighted, onOpen, onToggleSave, o
       onMouseLeave={() => onHover(null)}
     >
       <button className="card-main" onClick={onOpen}>
-        <div className="card-thumb" style={{ background: map.bg }}>
+        <div className="card-thumb" style={{ background: map?.bg ?? 'var(--panel-2)' }}>
           <span className="card-crosshair" aria-hidden="true" />
-          <span className="card-map">{map.name}</span>
+          <span className="card-map">{map?.name ?? lineup.map}</span>
           <span className={`side side-${lineup.side.toLowerCase()}`}>{lineup.side}</span>
         </div>
         <div className="card-body">

@@ -1,5 +1,5 @@
-import type { CsMap, Lineup } from '../data/lineups'
-import { UTILITY_META } from '../data/lineups'
+import type { CsMap, Lineup } from '../types'
+import { UTILITY_META } from '../types'
 
 interface Props {
   map: CsMap
