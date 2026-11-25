@@ -17,6 +17,7 @@ process.env.ADMIN_PASSWORD = 'admin-password'
 const { app } = await import('../src/api.ts')
 const { db, migrate, one } = await import('../src/db.ts')
 const { ensureAdmin, syncMapPool } = await import('../src/seed.ts')
+const { config } = await import('../src/config.ts')
 
 const ORIGIN = 'http://localhost:5173'
 
@@ -183,6 +184,41 @@ describe('map pool', () => {
     assert.equal((await api('GET', '/api/lineups/oldmap-smoke')).status, 404)
     const all = (await api('GET', '/api/lineups')).json.lineups.map((l: { id: string }) => l.id)
     assert.ok(!all.includes('oldmap-smoke'))
+  })
+})
+
+describe('admin from settings', () => {
+  const login = (username: string, password: string) =>
+    client()('POST', '/api/auth/login', { username, password })
+
+  it('resets the admin password when ADMIN_PASSWORD changes', async () => {
+    config.adminPassword = 'new-admin-password'
+    await ensureAdmin()
+    assert.equal((await login('admin', 'new-admin-password')).status, 200)
+    assert.equal((await login('admin', 'admin-password')).status, 401)
+  })
+
+  it('ignores stray spaces around the settings', async () => {
+    config.adminUsername = '  admin  '
+    config.adminPassword = 'new-admin-password'
+    await ensureAdmin()
+    const users = await one("SELECT COUNT(*) AS n FROM users WHERE username LIKE '%admin%'")
+    assert.equal(Number(users?.n), 1, 'no second admin with spaces in its name')
+  })
+
+  it('skips settings that break the sign-in rules', async () => {
+    config.adminUsername = 'admin'
+    config.adminPassword = 'short'
+    await ensureAdmin()
+    assert.equal((await login('admin', 'new-admin-password')).status, 200, 'password unchanged')
+    config.adminPassword = 'admin-password'
+    await ensureAdmin()
+  })
+
+  it('sends errors as JSON', async () => {
+    const res = await app.request('/api/lineups/nope')
+    assert.equal(res.status, 404)
+    assert.match(res.headers.get('content-type') ?? '', /application\/json/)
   })
 })
 

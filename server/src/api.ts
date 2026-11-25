@@ -53,8 +53,10 @@ app.onError((err, c) => {
     return c.json({ error: 'Invalid input', issues: err.issues }, 400)
   }
   if (err instanceof HTTPException) {
-    const res = err.getResponse()
-    return c.json({ error: err.message || res.statusText }, err.status, Object.fromEntries(res.headers))
+    // Keep headers like Retry-After from the exception, but not its text/plain content type.
+    const headers = Object.fromEntries(err.getResponse().headers)
+    delete headers['content-type']
+    return c.json({ error: err.message || 'Request failed' }, err.status, headers)
   }
   console.error(err)
   return c.json({ error: 'Internal server error' }, 500)
