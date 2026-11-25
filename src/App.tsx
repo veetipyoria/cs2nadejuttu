@@ -416,7 +416,7 @@ function App() {
 
       <footer className="footer">
         <div className="wrap footer-inner">
-          <span className="brand small"><Logo /> Nade<b>Deck</b></span>
+          <span className="brand small"><Logo /><span>Nade<b>Deck</b></span></span>
           <p>Fan-made utility reference. Not affiliated with Valve. Counter-Strike is a trademark of Valve Corporation.</p>
         </div>
       </footer>
