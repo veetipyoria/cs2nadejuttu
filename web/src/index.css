@@ -6,8 +6,13 @@
   --line: #262c35;
   --text: #e8ebef;
   --muted: #8a94a3;
-  --accent: #ffb020;
-  --accent-ink: #1a1200;
+  /* Brand red from the logo. --accent for text, lines and borders; --accent-fill behind
+     white text (darker, so white text stays readable at 5:1 contrast). */
+  --accent: #f0282b;
+  --accent-fill: #d81f26;
+  --accent-fill-hover: #c01a20;
+  --accent-ink: #ffffff;
+  --brand-red: #f0282b;
   --t: #e3b25c;
   --ct: #6ea8e0;
   --radius: 12px;
@@ -33,7 +38,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(1200px 600px at 80% -10%, rgba(255, 176, 32, 0.08), transparent 60%),
+    radial-gradient(1200px 600px at 80% -10%, rgba(240, 40, 43, 0.08), transparent 60%),
     var(--bg);
 }
 

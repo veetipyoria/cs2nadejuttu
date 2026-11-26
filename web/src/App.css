@@ -42,9 +42,38 @@
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
-.brand b { color: var(--accent); font-weight: 700; }
+/* Wordmark styled after the emblem: white italic NADE, DECK on a slanted red banner. */
+.brand > span {
+  display: inline-flex;
+  align-items: center;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: #fff;
+}
+.brand b {
+  display: inline-block;
+  /* Pull DECK in by the letter spacing that trails NADE's last letter. */
+  margin-left: -0.02em;
+  padding: 0 0.26em 0 0.2em;
+  background: var(--brand-red);
+  color: #fff;
+  font-weight: 700;
+  transform: skewX(-14deg);
+  box-shadow: 0 0 14px rgba(240, 40, 43, 0.45);
+}
 .brand.small { font-size: 1.15rem; }
-.brand.small svg { width: 22px; height: 22px; }
+.logo-mark {
+  display: block;
+  flex: none;
+  filter: drop-shadow(0 0 5px rgba(240, 40, 43, 0.45));
+}
+.emblem {
+  display: block;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(240, 40, 43, 0.35);
+}
 
 .nav { display: flex; align-items: center; gap: 6px; }
 .nav a, .nav-saved {
@@ -61,7 +90,7 @@
   min-width: 22px;
   padding: 1px 7px;
   border-radius: 99px;
-  background: var(--accent);
+  background: var(--accent-fill);
   color: var(--accent-ink);
   font-size: 0.75rem;
   font-weight: 700;
@@ -80,8 +109,8 @@
   font-weight: 600;
   transition: transform 0.15s, background 0.15s, border-color 0.15s;
 }
-.btn-primary { background: var(--accent); color: var(--accent-ink); }
-.btn-primary:hover { background: #ffc24d; transform: translateY(-1px); }
+.btn-primary { background: var(--accent-fill); color: var(--accent-ink); }
+.btn-primary:hover { background: var(--accent-fill-hover); transform: translateY(-1px); }
 .btn-ghost { border: 1px solid var(--line); background: var(--panel); }
 .btn-ghost:hover { border-color: #3a424e; }
 
@@ -291,7 +320,7 @@
   color: var(--muted);
 }
 .chip:hover { color: var(--text); }
-.chip.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.chip.on { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--accent-ink); font-weight: 600; }
 
 .toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 500; }
 .toggle input { position: absolute; opacity: 0; pointer-events: none; }
@@ -682,8 +711,8 @@
 }
 
 /* ---------- Account / auth ---------- */
-.btn-small { height: 36px; padding: 0 14px; background: var(--accent); color: var(--accent-ink); margin-left: 6px; }
-.btn-small:hover { background: #ffc24d; }
+.btn-small { height: 36px; padding: 0 14px; background: var(--accent-fill); color: var(--accent-ink); margin-left: 6px; }
+.btn-small:hover { background: var(--accent-fill-hover); }
 .account { display: flex; align-items: center; gap: 8px; margin-left: 6px; }
 .avatar {
   display: grid;

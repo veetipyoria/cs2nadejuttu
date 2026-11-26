@@ -44,7 +44,7 @@ export const config = {
   /** Browser origins allowed to call the API (only needed when not using the Vite proxy). */
   corsOrigins: list(env.CORS_ORIGINS, ['http://localhost:5173']),
   /** Built frontend to serve in production. Set to empty string to disable. */
-  staticDir: env.STATIC_DIR === '' ? null : resolve(serverRoot, env.STATIC_DIR ?? '../dist'),
+  staticDir: env.STATIC_DIR === '' ? null : resolve(serverRoot, env.STATIC_DIR ?? '../web/dist'),
   sessionDays: 30,
   adminUsername: env.ADMIN_USERNAME,
   adminPassword: env.ADMIN_PASSWORD,

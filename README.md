@@ -1,32 +1,47 @@
-# React + TypeScript + Vite
+# NadeDeck
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+CS2 utility lineups: smokes, flashes, molotovs and HEs for every Active Duty map.
+Live at [cs2nadejuttu.vercel.app](https://cs2nadejuttu.vercel.app).
 
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```
+web/       the website: React + Vite (src/, public/, index.html)
+server/    the API: Hono + Turso/SQLite (see server/README.md)
+  schema.sql   database schema: add numbered migrations at the bottom
+shared/    data types used by both web/ and server/ (types only)
+scripts/   repo-level helpers (dev.mjs starts both apps)
+vercel.json  deploys web/ and server/ as one Vercel project
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+## Getting started
+
+Needs Node 24 or newer.
+
+```sh
+npm run setup   # installs web/ and server/
+npm run dev     # starts the API (:3001) and the website (:5173) together
+```
+
+Open http://localhost:5173. Without Turso settings, the API uses a local SQLite file
+(`server/data/nadedeck.db`), so development works offline. Copy `server/.env.example` to
+`server/.env` to set an admin account or connect to Turso.
+
+## Other commands (repo root)
+
+| Command | Does |
+| --- | --- |
+| `npm run build` | builds the website into `web/dist` |
+| `npm test` | runs the API tests |
+| `npm run typecheck` | type-checks the website and the API |
+| `npm run lint` | lints the website |
+
+## Branches and deploys
+
+- `main` is the live site. Vercel deploys every push to it.
+- `development` is for ongoing work. Its pushes get a Vercel preview deployment that uses the
+  test database. Merge into `main` with a pull request when it's ready.
+
+## Changing the database
+
+Edit [`server/schema.sql`](server/schema.sql): add a new `-- @migration N: ...` block at the
+bottom and never edit one that's already committed. Every database (yours, your teammates',
+test and production) applies new blocks automatically the next time the server starts.

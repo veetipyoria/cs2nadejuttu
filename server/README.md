@@ -21,7 +21,7 @@ cp .env.example .env     # optional: sets the admin account, port, etc.
 npm run dev              # http://localhost:3001, restarts on change
 ```
 
-Then start the frontend (`npm run dev` in the parent folder); Vite proxies `/api` to this server.
+Or run `npm run dev` at the repo root to start this API and the website (`web/`) together; Vite proxies `/api` to this server.
 
 On first start the database (`data/nadedeck.db`) is created and seeded with the starter maps and lineups.
 Set `ADMIN_USERNAME` / `ADMIN_PASSWORD` to create an admin account.
@@ -44,7 +44,7 @@ Scope the Turso variables to Production, or give Preview its own Turso database.
 
 Check the setup locally first with `npx vercel dev --local` (no account needed).
 
-**Self-hosting instead:** `npm run build` in the parent folder, set `NODE_ENV=production` in `.env`,
+**Self-hosting instead:** `npm run build` at the repo root (builds `web/`), set `NODE_ENV=production` in `.env`,
 then `npm start`. The server serves the built site and the API from one origin.
 
 ## Endpoints
