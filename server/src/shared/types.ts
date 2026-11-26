@@ -1,6 +1,11 @@
 // Data shapes shared by the website (web/) and the API (server/): one definition, so the two
 // can't drift apart.
 //
+// It lives inside server/ on purpose: the API must never import files outside its own folder.
+// When it did (from a top-level shared/ folder), TypeScript moved the compiled entry file from
+// src/app.js to server/src/app.js and the API crashed on Vercel. The website importing from
+// here is fine: its build bundles everything into one output.
+//
 // Types only, no runtime code. Both sides import this with `import type`, which is erased
 // before the code runs, so neither the browser bundle nor the deployed API needs this file.
 // Keep it that way: runtime values (lists, colours) belong in web/ or server/.

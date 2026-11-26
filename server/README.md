@@ -84,6 +84,8 @@ src/
   repo.ts        all SQL for maps, lineups, saved decks
   auth.ts        scrypt password hashing, sessions, auth middleware
   validation.ts  zod schemas
+  shared/types.ts  data types also used by the website (keep it types-only; the API must
+                 not import anything outside server/)
   routes/        auth, lineups + maps, me, admin
   seed-data.ts   starter content
 test/            node:test suite (throwaway local DB): npm test
