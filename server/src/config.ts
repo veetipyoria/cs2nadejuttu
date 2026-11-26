@@ -24,6 +24,11 @@ if (deployedOnVercel && !env.TURSO_DATABASE_URL) {
   )
 }
 
+const smtpHost = env.SMTP_HOST || 'smtp.gmail.com'
+const smtpUser = env.SMTP_USER?.trim()
+// Gmail shows app passwords in groups of four with spaces; those spaces aren't part of it.
+const smtpPass = smtpHost === 'smtp.gmail.com' ? env.SMTP_PASS?.replace(/\s+/g, '') : env.SMTP_PASS
+
 export const config = {
   port: Number(env.PORT ?? 3001),
   onVercel,
@@ -46,6 +51,24 @@ export const config = {
   /** Built frontend to serve in production. Set to empty string to disable. */
   staticDir: env.STATIC_DIR === '' ? null : resolve(serverRoot, env.STATIC_DIR ?? '../web/dist'),
   sessionDays: 30,
+  /**
+   * Gmail (or any SMTP server) login for sending sign-up codes. Used first when both are set.
+   * For Gmail, SMTP_PASS is an app password, not the account password.
+   */
+  smtpUser: smtpUser || undefined,
+  smtpPass: smtpPass || undefined,
+  smtpHost,
+  smtpPort: Number(env.SMTP_PORT || 465),
+  /**
+   * Resend API key, used when no SMTP login is set. With neither, development logs the email to
+   * the console and production refuses to register new accounts.
+   */
+  resendApiKey: env.RESEND_API_KEY || undefined,
+  /**
+   * Sender for outgoing email. Defaults to the Gmail address when sending through Gmail (Gmail
+   * rewrites other senders anyway); with Resend, its domain must be verified there.
+   */
+  emailFrom: env.EMAIL_FROM || (smtpUser ? `NadeDeck <${smtpUser}>` : 'NadeDeck <onboarding@resend.dev>'),
   adminUsername: env.ADMIN_USERNAME,
   adminPassword: env.ADMIN_PASSWORD,
 }

@@ -42,6 +42,14 @@ export const credentialsSchema = z.object({
   password: z.string().min(8).max(200),
 })
 
+export const signupSchema = credentialsSchema.extend({
+  email: z.string().trim().toLowerCase().max(254).pipe(z.email('Enter a valid email address')),
+})
+
+export const registerSchema = signupSchema.extend({
+  code: z.string().trim().regex(/^\d{6}$/, 'The code is 6 digits'),
+})
+
 export const lineupInputSchema = z.object({
   map: text(40),
   title: z.string().trim().min(3).max(80),

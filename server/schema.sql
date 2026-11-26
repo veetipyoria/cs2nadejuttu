@@ -77,3 +77,20 @@ CREATE TABLE saved (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now')),
   PRIMARY KEY (user_id, lineup_id)
 );
+
+
+-- @migration 2: email verification for new accounts
+
+-- Emails are stored lowercased. Accounts made before this migration (and the admin from
+-- settings) have no email; SQLite allows any number of NULLs in a UNIQUE index.
+ALTER TABLE users ADD COLUMN email TEXT;
+CREATE UNIQUE INDEX users_email ON users(email);
+
+-- One pending sign-up code per email. Only a hash of the code is stored.
+CREATE TABLE email_codes (
+  email      TEXT PRIMARY KEY,
+  code_hash  TEXT NOT NULL,
+  expires_at INTEGER NOT NULL,             -- ms since epoch
+  sent_at    INTEGER NOT NULL,             -- ms since epoch, for the resend cooldown
+  attempts   INTEGER NOT NULL DEFAULT 0    -- wrong guesses so far
+);
