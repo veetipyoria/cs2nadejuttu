@@ -7,7 +7,7 @@ Live at [cs2nadejuttu.vercel.app](https://cs2nadejuttu.vercel.app).
 web/       the website: React + Vite (src/, public/, index.html)
 server/    the API: Hono + Turso/SQLite (see server/README.md)
   schema.sql   database schema: add numbered migrations at the bottom
-shared/    data types used by both web/ and server/ (types only)
+  src/shared/types.ts  data types used by both web/ and server/ (types only)
 scripts/   repo-level helpers (dev.mjs starts both apps)
 vercel.json  deploys web/ and server/ as one Vercel project
 ```

@@ -1,6 +1,6 @@
-// Data shapes come from ../../shared/types.ts (shared with the website). This file adds the
+// Data shapes come from ./shared/types.ts (shared with the website). This file adds the
 // server-only parts: runtime lists used for input validation, and Hono's context type.
-import type { Click, LineupStatus, Side, ThrowType, User, UtilityType } from '../../shared/types.ts'
+import type { Click, LineupStatus, Side, ThrowType, User, UtilityType } from './shared/types.ts'
 
 export type {
   Click,
@@ -13,7 +13,7 @@ export type {
   Side,
   ThrowType,
   UtilityType,
-} from '../../shared/types.ts'
+} from './shared/types.ts'
 
 export const UTILITY_TYPES = ['smoke', 'flash', 'molotov', 'he'] as const satisfies readonly UtilityType[]
 export const SIDES = ['T', 'CT'] as const satisfies readonly Side[]
