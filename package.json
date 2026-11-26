@@ -1,26 +1,14 @@
 {
-  "name": "my-react-app",
+  "name": "nadedeck",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "description": "NadeDeck: CS2 utility lineups. Website in web/, API in server/, shared types in shared/.",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "oxlint",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@vercel/analytics": "^2.0.1",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1"
-  },
-  "devDependencies": {
-    "@types/node": "^24.19.2",
-    "@types/react": "^19.3.0",
-    "@types/react-dom": "^19.3.0",
-    "@vitejs/plugin-react": "^6.1.2",
-    "oxlint": "^1.90.0",
-    "typescript": "~7.0.2",
-    "vite": "^8.3.6"
+    "setup": "npm --prefix web install && npm --prefix server install",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm --prefix web run build",
+    "test": "npm --prefix server test",
+    "typecheck": "npm --prefix web run typecheck && npm --prefix server run typecheck",
+    "lint": "npm --prefix web run lint"
   }
 }
