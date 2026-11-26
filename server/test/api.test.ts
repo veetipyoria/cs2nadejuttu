@@ -12,20 +12,27 @@ process.env.DATABASE_PATH = join(tmp, 'test.db')
 process.env.STATIC_DIR = ''
 process.env.ADMIN_USERNAME = 'admin'
 process.env.ADMIN_PASSWORD = 'admin-password'
+process.env.RESEND_API_KEY = ''
+// Each test client gets its own IP so the auth rate limit (per IP) doesn't trip across tests.
+process.env.TRUST_PROXY = 'true'
 
 // Imported after env is set so config picks it up.
 const { app } = await import('../src/api.ts')
-const { db, migrate, one } = await import('../src/db.ts')
+const { db, loadMigrations, migrate, one } = await import('../src/db.ts')
+const { outbox } = await import('../src/mailer.ts')
 const { ensureAdmin, syncMapPool } = await import('../src/seed.ts')
 const { config } = await import('../src/config.ts')
 
 const ORIGIN = 'http://localhost:5173'
 
+let nextIp = 1
+
 /** Tiny client that keeps a session cookie between calls. */
 function client() {
   let cookie = ''
+  const ip = `10.0.0.${nextIp++}`
   return async (method: string, path: string, body?: unknown) => {
-    const headers: Record<string, string> = { Origin: ORIGIN }
+    const headers: Record<string, string> = { Origin: ORIGIN, 'X-Real-IP': ip }
     if (cookie) headers.Cookie = cookie
     if (body !== undefined) headers['Content-Type'] = 'application/json'
     const res = await app.request(path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) })
@@ -99,11 +106,47 @@ describe('accounts, deck and submissions', () => {
   const admin = client()
   let submittedId = ''
 
-  it('registers and rejects duplicate usernames', async () => {
-    const r1 = await user('POST', '/api/auth/register', { username: 'player1', password: 'hunter2hunter2' })
-    assert.equal(r1.status, 201)
-    const r2 = await client()('POST', '/api/auth/register', { username: 'PLAYER1', password: 'whatever123' })
-    assert.equal(r2.status, 409)
+  const codeFromOutbox = () => outbox.at(-1)!.text.match(/\b\d{6}\b/)![0]
+  const notCode = (code: string) => (code === '123456' ? '654321' : '123456')
+
+  it('registers with an emailed code', async () => {
+    const signup = { username: 'player1', email: 'Player1@Example.com', password: 'hunter2hunter2' }
+    assert.equal((await user('POST', '/api/auth/register', { ...signup, code: '000000' })).status, 400, 'no code sent yet')
+
+    assert.equal((await user('POST', '/api/auth/register/code', signup)).status, 204)
+    assert.equal(outbox.at(-1)!.to, 'player1@example.com')
+    const code = codeFromOutbox()
+
+    assert.equal((await user('POST', '/api/auth/register/code', signup)).status, 429, 'resend cooldown')
+    assert.equal((await user('POST', '/api/auth/register', { ...signup, code: notCode(code) })).status, 400)
+
+    const ok = await user('POST', '/api/auth/register', { ...signup, code })
+    assert.equal(ok.status, 201)
+    assert.equal(ok.json.user.username, 'player1')
+    assert.equal((await user('GET', '/api/auth/me')).json.user.username, 'player1')
+
+    const again = await client()('POST', '/api/auth/register', { ...signup, username: 'player1b', code })
+    assert.equal(again.status, 400, 'a code works only once')
+  })
+
+  it('rejects taken usernames and emails before sending a code', async () => {
+    const sent = outbox.length
+    const send = (body: object) => client()('POST', '/api/auth/register/code', { password: 'whatever123', ...body })
+    assert.equal((await send({ username: 'PLAYER1', email: 'new@example.com' })).status, 409)
+    assert.equal((await send({ username: 'player2', email: 'player1@EXAMPLE.com' })).status, 409)
+    assert.equal((await send({ username: 'player2', email: 'not-an-email' })).status, 400)
+    assert.equal(outbox.length, sent)
+  })
+
+  it('locks a code after too many wrong guesses', async () => {
+    const api = client()
+    const signup = { username: 'guesser', email: 'guesser@example.com', password: 'hunter2hunter2' }
+    assert.equal((await api('POST', '/api/auth/register/code', signup)).status, 204)
+    const code = codeFromOutbox()
+    for (let i = 0; i < 5; i++) await client()('POST', '/api/auth/register', { ...signup, code: notCode(code) })
+    const { status, json } = await api('POST', '/api/auth/register', { ...signup, code })
+    assert.equal(status, 400)
+    assert.match(json.error, /Too many/)
   })
 
   it('rejects a wrong password', async () => {
@@ -225,13 +268,13 @@ describe('admin from settings', () => {
 describe('migrations', () => {
   it('records applied migrations in schema_migrations', async () => {
     const row = await one('SELECT MAX(version) AS v FROM schema_migrations')
-    assert.equal(Number(row?.v), 1)
+    assert.equal(Number(row?.v), loadMigrations().length)
   })
 
   it('is a no-op when run again', async () => {
     await migrate()
     const row = await one('SELECT COUNT(*) AS n FROM schema_migrations')
-    assert.equal(Number(row?.n), 1)
+    assert.equal(Number(row?.n), loadMigrations().length)
   })
 })
 

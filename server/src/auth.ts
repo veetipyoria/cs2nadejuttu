@@ -34,7 +34,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
 const DUMMY_HASH = await hashPassword(randomBytes(16).toString('hex'))
 export const verifyAgainstDummy = (password: string) => verifyPassword(password, DUMMY_HASH)
 
-const sha256 = (value: string) => createHash('sha256').update(value).digest('hex')
+export const sha256 = (value: string) => createHash('sha256').update(value).digest('hex')
 
 export async function createSession(c: Context, userId: number): Promise<void> {
   const token = randomBytes(32).toString('base64url')
@@ -60,6 +60,7 @@ export async function destroySession(c: Context): Promise<void> {
 
 export async function purgeExpiredSessions(): Promise<void> {
   await db.execute({ sql: 'DELETE FROM sessions WHERE expires_at < ?', args: [Date.now()] })
+  await db.execute({ sql: 'DELETE FROM email_codes WHERE expires_at < ?', args: [Date.now()] })
 }
 
 /** Attaches the signed-in user (or null) to every request. */

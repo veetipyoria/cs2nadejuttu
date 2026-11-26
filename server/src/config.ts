@@ -46,6 +46,13 @@ export const config = {
   /** Built frontend to serve in production. Set to empty string to disable. */
   staticDir: env.STATIC_DIR === '' ? null : resolve(serverRoot, env.STATIC_DIR ?? '../web/dist'),
   sessionDays: 30,
+  /**
+   * Resend API key for sending sign-up codes. Without it, development logs the email to the
+   * console and production refuses to register new accounts.
+   */
+  resendApiKey: env.RESEND_API_KEY || undefined,
+  /** Sender for outgoing email; its domain must be verified in Resend. */
+  emailFrom: env.EMAIL_FROM || 'NadeDeck <onboarding@resend.dev>',
   adminUsername: env.ADMIN_USERNAME,
   adminPassword: env.ADMIN_PASSWORD,
 }

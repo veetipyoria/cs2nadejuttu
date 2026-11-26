@@ -36,8 +36,12 @@ export const api = {
   me: () => request<{ user: User | null }>('GET', '/auth/me').then((r) => r.user),
   login: (username: string, password: string) =>
     request<{ user: User }>('POST', '/auth/login', { username, password }).then((r) => r.user),
-  register: (username: string, password: string) =>
-    request<{ user: User }>('POST', '/auth/register', { username, password }).then((r) => r.user),
+  /** Step 1 of sign-up: checks the details and emails a 6-digit code. */
+  sendSignupCode: (username: string, email: string, password: string) =>
+    request<void>('POST', '/auth/register/code', { username, email, password }),
+  /** Step 2 of sign-up: creates the account with the emailed code. */
+  register: (username: string, email: string, password: string, code: string) =>
+    request<{ user: User }>('POST', '/auth/register', { username, email, password, code }).then((r) => r.user),
   logout: () => request<void>('POST', '/auth/logout'),
 
   saved: () => request<{ ids: string[] }>('GET', '/me/saved').then((r) => r.ids),

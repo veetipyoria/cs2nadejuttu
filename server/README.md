@@ -35,8 +35,10 @@ the only file named `app`, `index` or `server`: Vercel detects Hono apps by thos
 
 1. Import the repo at [vercel.com/new](https://vercel.com/new). Leave the root directory as the repo root.
 2. Add environment variables in the project settings:
-   `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`.
-   Vercel Functions have no persistent disk, so Turso is required there.
+   `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
+   `RESEND_API_KEY`, `EMAIL_FROM`.
+   Vercel Functions have no persistent disk, so Turso is required there. Without
+   `RESEND_API_KEY`, nobody can sign up (sign-in still works).
 3. Deploy. The first request on each new instance runs pending `schema.sql` migrations.
 
 Preview deployments get the same variables by default, so they'd use the production database.
@@ -58,7 +60,8 @@ then `npm start`. The server serves the built site and the API from one origin.
 | POST | `/api/lineups` | user | Users' submissions go to `pending`; admins' are published |
 | PATCH | `/api/lineups/:id` | user | Admin, or the author while unpublished |
 | DELETE | `/api/lineups/:id` | user | Admin, or the author while unpublished |
-| POST | `/api/auth/register` | – | `{ username, password }`; rate-limited |
+| POST | `/api/auth/register/code` | – | `{ username, email, password }`: checks they're free and emails a 6-digit code (valid 10 min, one per minute); rate-limited |
+| POST | `/api/auth/register` | – | `{ username, email, password, code }`; 5 wrong codes voids it; rate-limited |
 | POST | `/api/auth/login` | – | Sets an httpOnly session cookie; rate-limited |
 | POST | `/api/auth/logout` | – | |
 | GET | `/api/auth/me` | – | `{ user }` or `{ user: null }` |
@@ -83,6 +86,7 @@ src/
   db.ts          database client (Turso or local file) + runs schema.sql migrations
   repo.ts        all SQL for maps, lineups, saved decks
   auth.ts        scrypt password hashing, sessions, auth middleware
+  mailer.ts      sends email through Resend (logs it instead when no key is set)
   validation.ts  zod schemas
   shared/types.ts  data types also used by the website (keep it types-only; the API must
                  not import anything outside server/)
