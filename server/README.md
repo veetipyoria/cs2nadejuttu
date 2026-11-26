@@ -36,9 +36,9 @@ the only file named `app`, `index` or `server`: Vercel detects Hono apps by thos
 1. Import the repo at [vercel.com/new](https://vercel.com/new). Leave the root directory as the repo root.
 2. Add environment variables in the project settings:
    `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `ADMIN_USERNAME`, `ADMIN_PASSWORD`,
-   `RESEND_API_KEY`, `EMAIL_FROM`.
+   and for email, either `SMTP_USER` + `SMTP_PASS` (Gmail, free) or `RESEND_API_KEY` + `EMAIL_FROM`.
    Vercel Functions have no persistent disk, so Turso is required there. Without
-   `RESEND_API_KEY`, nobody can sign up (sign-in still works).
+   an email provider, nobody can sign up (sign-in still works).
 3. Deploy. The first request on each new instance runs pending `schema.sql` migrations.
 
 Preview deployments get the same variables by default, so they'd use the production database.
@@ -86,7 +86,7 @@ src/
   db.ts          database client (Turso or local file) + runs schema.sql migrations
   repo.ts        all SQL for maps, lineups, saved decks
   auth.ts        scrypt password hashing, sessions, auth middleware
-  mailer.ts      sends email through Resend (logs it instead when no key is set)
+  mailer.ts      sends email through Gmail/SMTP or Resend (logs it when neither is set)
   validation.ts  zod schemas
   shared/types.ts  data types also used by the website (keep it types-only; the API must
                  not import anything outside server/)

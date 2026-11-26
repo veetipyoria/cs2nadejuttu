@@ -13,6 +13,8 @@ process.env.STATIC_DIR = ''
 process.env.ADMIN_USERNAME = 'admin'
 process.env.ADMIN_PASSWORD = 'admin-password'
 process.env.RESEND_API_KEY = ''
+process.env.SMTP_USER = ''
+process.env.SMTP_PASS = ''
 // Each test client gets its own IP so the auth rate limit (per IP) doesn't trip across tests.
 process.env.TRUST_PROXY = 'true'
 
