@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { api } from '../api'
 import type { User } from '../types'
-import { Logo } from './UtilityIcon'
+import { Emblem } from './UtilityIcon'
 
 interface Props {
   onClose: () => void
@@ -42,7 +42,7 @@ export function AuthModal({ onClose, onAuthed }: Props) {
     <div className="modal-backdrop" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <form className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onSubmit={submit}>
         <button type="button" className="modal-close" onClick={onClose} aria-label="Close">✕</button>
-        <Logo />
+        <Emblem size={72} />
         <h2 id="auth-title">{isLogin ? 'Sign in' : 'Create account'}</h2>
         <p className="muted">Sync your deck across devices{isLogin ? '' : ' and submit your own lineups'}.</p>
 

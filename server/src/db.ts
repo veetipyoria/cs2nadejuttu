@@ -78,32 +78,35 @@ export function loadMigrations(source = readSchema()): Migration[] {
  * PRAGMA user_version. Databases created before this switch (which used user_version)
  * are carried over automatically.
  */
-async function appliedVersion(): Promise<number> {
-  await db.execute(`
+export async function appliedVersion(client: Client = db): Promise<number> {
+  await client.execute(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       version    INTEGER PRIMARY KEY,
       title      TEXT NOT NULL,
       applied_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%SZ', 'now'))
     )`)
-  const row = await one('SELECT MAX(version) AS v FROM schema_migrations')
+  const row = (await client.execute('SELECT MAX(version) AS v FROM schema_migrations')).rows[0]
   const tracked = Number(row?.v ?? 0)
   if (tracked > 0) return tracked
 
-  const legacy = Number((await one('PRAGMA user_version'))?.user_version ?? 0)
+  const legacy = Number((await client.execute('PRAGMA user_version')).rows[0]?.user_version ?? 0)
   for (let v = 1; v <= legacy; v++) {
-    await db.execute({ sql: 'INSERT INTO schema_migrations (version, title) VALUES (?, ?)', args: [v, '(from user_version)'] })
+    await client.execute({ sql: 'INSERT INTO schema_migrations (version, title) VALUES (?, ?)', args: [v, '(from user_version)'] })
   }
   return legacy
 }
 
-/** Applies every migration in schema.sql that this database hasn't run yet. */
-export async function migrate(): Promise<void> {
-  if (config.localDbPath) {
+/**
+ * Applies every migration in schema.sql that the database hasn't run yet. Defaults to the
+ * server's own database; scripts can pass another client.
+ */
+export async function migrate(client: Client = db): Promise<void> {
+  if (client === db && config.localDbPath) {
     await db.executeMultiple('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;')
   }
 
   const migrations = loadMigrations()
-  const current = await appliedVersion()
+  const current = await appliedVersion(client)
 
   if (current > migrations.length) {
     throw new Error(
@@ -113,7 +116,7 @@ export async function migrate(): Promise<void> {
   }
 
   for (const m of migrations.slice(current)) {
-    const tx = await db.transaction('write')
+    const tx = await client.transaction('write')
     try {
       await tx.executeMultiple(m.sql)
       await tx.execute({ sql: 'INSERT INTO schema_migrations (version, title) VALUES (?, ?)', args: [m.version, m.title] })
